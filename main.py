@@ -64,20 +64,40 @@ async def home(request: Request):
 
 def gemini_json(prompt):
     """Ask Gemini to extract booking information as JSON."""
-    for attempt in range(3):
-        try:
-            result = gemini_client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt,
-                config={"response_mime_type": "application/json"}
-            )
-            return json.loads(result.text)
-        except errors.APIError as exc:
-            if getattr(exc, "code", None) != 503 or attempt == 2:
-                raise
-            time.sleep(2 ** (attempt + 1))
+    models_to_try = [GEMINI_MODEL]
 
-    return {}
+    # Optional fallback model from Vercel environment variables.
+    fallback_model = os.getenv(
+        "GEMINI_FALLBACK_MODEL", "gemini-2.5-flash"
+    ).strip()
+
+    if fallback_model and fallback_model not in models_to_try:
+        models_to_try.append(fallback_model)
+
+    last_error = None
+
+    for model_name in models_to_try:
+        for attempt in range(3):
+            try:
+                result = gemini_client.models.generate_content(
+                    model=model_name,
+                    contents=prompt,
+                    config={"response_mime_type": "application/json"}
+                )
+                return json.loads(result.text)
+
+            except errors.APIError as exc:
+                last_error = exc
+                code = getattr(exc, "code", None)
+
+                # Retry temporary overloads and rate limits.
+                if code not in (429, 500, 502, 503, 504):
+                    raise
+
+                if attempt < 2:
+                    time.sleep(2 ** (attempt + 1))
+
+    raise last_error
 
 
 def extract_request(text, state):
