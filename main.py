@@ -1,5 +1,6 @@
 
 import os
+from pathlib import Path
 import io
 import json
 import base64
@@ -30,8 +31,19 @@ GEMINI_MODEL = os.getenv(
 
 app = FastAPI(title="Voice Assistant Hotel Booking")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+# templates = Jinja2Templates(directory="templates")
+BASE_DIR = Path(__file__).resolve().parent
+
+app.mount(
+    "/static",
+    StaticFiles(directory=str(BASE_DIR / "static")),
+    name="static"
+)
+
+templates = Jinja2Templates(
+    directory=str(BASE_DIR / "templates")
+)
 
 eleven = ElevenLabs(api_key=ELEVENLABS_API_KEY) if ELEVENLABS_API_KEY else None
 gemini_client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
