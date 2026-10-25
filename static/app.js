@@ -128,10 +128,12 @@ mic.addEventListener("click", async () => {
       if (event.data.size > 0) chunks.push(event.data);
     };
 
+
     recorder.onerror = () => {
-      setStatus("Recording mein problem hui. Dobara try karein.");
-      releaseMic();
-    };
+        setStatus("Recording mein problem hui. Dobara try karein.");
+        releaseMic();
+        busy = false;
+      };
 
     recorder.onstop = () => {
       const blob = new Blob(chunks, {
