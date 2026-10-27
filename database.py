@@ -7,13 +7,28 @@ load_dotenv(override=False)
 
 
 def get_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=int(os.getenv("DB_PORT", "3306")),
-        user=os.getenv("DB_USER", "root"),
-        password=os.getenv("DB_PASSWORD", ""),
-        database=os.getenv("DB_NAME", "hotel_booking")
+    conn = mysql.connector.connect(
+        host=os.getenv("DB_HOST"),
+        port=int(os.getenv("DB_PORT", "22738")),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        database=os.getenv("DB_NAME"),
+        ssl_disabled=False
     )
+
+    cursor = conn.cursor()
+    cursor.execute("SELECT DATABASE()")
+    print("DEBUG DATABASE:", cursor.fetchone()[0])
+
+    cursor.execute("""
+        SELECT TABLE_NAME
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE()
+    """)
+    print("DEBUG TABLES:", [row[0] for row in cursor.fetchall()])
+
+    cursor.close()
+    return conn
 
 
 def test_connection():
